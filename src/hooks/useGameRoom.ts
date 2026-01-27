@@ -387,6 +387,46 @@ export function useGameRoom(roomCode?: string) {
     }
   }, [room]);
 
+  // Join as player helper - exposed so views can call it
+  const joinAsPlayer = useCallback(async (): Promise<boolean> => {
+    if (!room) return false;
+    
+    try {
+      // Check if already a player
+      const existingPlayer = players.find(p => p.session_id === sessionId);
+      if (existingPlayer) {
+        setCurrentPlayer(existingPlayer);
+        return true;
+      }
+
+      // Create player record
+      const { data: playerData, error: playerError } = await supabase
+        .from('game_players')
+        .upsert({
+          room_id: room.id,
+          session_id: sessionId,
+          player_role: 'spectator',
+          last_seen: new Date().toISOString()
+        }, {
+          onConflict: 'room_id,session_id'
+        })
+        .select()
+        .single();
+
+      if (playerError) throw playerError;
+
+      setCurrentPlayer(playerData as GamePlayer);
+      setPlayers(prev => {
+        const filtered = prev.filter(p => p.session_id !== sessionId);
+        return [...filtered, playerData as GamePlayer];
+      });
+      return true;
+    } catch (err) {
+      console.error('Error joining as player:', err);
+      return false;
+    }
+  }, [room, players, sessionId]);
+
   // Fetch and subscribe to room data
   useEffect(() => {
     if (!roomCode) {
@@ -403,7 +443,7 @@ export function useGameRoom(roomCode?: string) {
           .from('game_rooms')
           .select('*')
           .eq('room_code', roomCode.toUpperCase())
-          .single();
+          .maybeSingle();
 
         if (roomError || !roomData) {
           setError('Room not found');
@@ -443,52 +483,71 @@ export function useGameRoom(roomCode?: string) {
 
     fetchData();
 
-    // Set up realtime subscriptions
-    const roomChannel = supabase
-      .channel(`room-${roomCode}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'game_rooms',
-        filter: `room_code=eq.${roomCode.toUpperCase()}`
-      }, (payload) => {
-        if (payload.new) {
-          setRoom(payload.new as GameRoom);
-        }
-      })
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'board_cards'
-      }, async () => {
-        // Refetch cards on any change
-        const { data } = await supabase
-          .from('board_cards')
-          .select('*')
-          .eq('room_id', room?.id)
-          .order('position');
-        if (data) setCards(data as BoardCard[]);
-      })
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'game_players'
-      }, async () => {
-        // Refetch players on any change
-        const { data } = await supabase
-          .from('game_players')
-          .select('*')
-          .eq('room_id', room?.id);
-        if (data) {
-          setPlayers(data as GamePlayer[]);
-          const player = data.find(p => p.session_id === sessionId);
-          setCurrentPlayer(player as GamePlayer || null);
-        }
-      })
-      .subscribe();
+    // Set up realtime subscriptions - using roomId from fetchData closure
+    let currentRoomId: string | null = null;
+    
+    const setupSubscription = async () => {
+      const { data: roomData } = await supabase
+        .from('game_rooms')
+        .select('id')
+        .eq('room_code', roomCode.toUpperCase())
+        .maybeSingle();
+      
+      if (!roomData) return null;
+      currentRoomId = roomData.id;
+
+      return supabase
+        .channel(`room-${roomCode}`)
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'game_rooms',
+          filter: `room_code=eq.${roomCode.toUpperCase()}`
+        }, (payload) => {
+          if (payload.new) {
+            setRoom(payload.new as GameRoom);
+          }
+        })
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'board_cards',
+          filter: `room_id=eq.${currentRoomId}`
+        }, async () => {
+          if (!currentRoomId) return;
+          const { data } = await supabase
+            .from('board_cards')
+            .select('*')
+            .eq('room_id', currentRoomId)
+            .order('position');
+          if (data) setCards(data as BoardCard[]);
+        })
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'game_players',
+          filter: `room_id=eq.${currentRoomId}`
+        }, async () => {
+          if (!currentRoomId) return;
+          const { data } = await supabase
+            .from('game_players')
+            .select('*')
+            .eq('room_id', currentRoomId);
+          if (data) {
+            setPlayers(data as GamePlayer[]);
+            const player = data.find(p => p.session_id === sessionId);
+            setCurrentPlayer(player as GamePlayer || null);
+          }
+        })
+        .subscribe();
+    };
+
+    const channelPromise = setupSubscription();
 
     return () => {
-      supabase.removeChannel(roomChannel);
+      channelPromise.then(channel => {
+        if (channel) supabase.removeChannel(channel);
+      });
     };
   }, [roomCode, sessionId]);
 
@@ -502,6 +561,7 @@ export function useGameRoom(roomCode?: string) {
     sessionId,
     createRoom,
     joinRoom,
+    joinAsPlayer,
     assignRole,
     startGame,
     submitClue,

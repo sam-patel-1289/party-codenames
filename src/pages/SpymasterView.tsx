@@ -24,7 +24,7 @@ export default function SpymasterView() {
     currentPlayer,
     isLoading,
     error,
-    joinRoom,
+    joinAsPlayer,
     assignRole,
     startGame,
     submitClue,
@@ -36,13 +36,18 @@ export default function SpymasterView() {
   const [selectedCard, setSelectedCard] = useState<BoardCard | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSecretKey, setShowSecretKey] = useState(true);
+  const [hasJoined, setHasJoined] = useState(false);
 
-  // Auto-join room on mount
+  // Auto-join as player when room is loaded
   useEffect(() => {
-    if (roomCode && !room && !isLoading) {
-      joinRoom(roomCode);
+    if (room && !isLoading && !hasJoined && !currentPlayer) {
+      joinAsPlayer().then(success => {
+        if (success) setHasJoined(true);
+      });
+    } else if (currentPlayer) {
+      setHasJoined(true);
     }
-  }, [roomCode, room, isLoading, joinRoom]);
+  }, [room, isLoading, hasJoined, currentPlayer, joinAsPlayer]);
 
   if (isLoading) {
     return (
