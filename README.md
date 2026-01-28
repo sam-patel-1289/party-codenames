@@ -1,4 +1,4 @@
-# Crossfire Codenames 🕵️‍♂️📺
+# Party Codenames 🕵️‍♂️📺
 
 > **The ultimate living room game night upgrade.**  
 > Play Codenames on your TV, using your phones as secret controllers.
@@ -8,11 +8,11 @@
 ![React](https://img.shields.io/badge/react-18-cyan)
 ![TypeScript](https://img.shields.io/badge/typescript-5-blue)
 
-## 🎯 Why Crossfire?
+## 🎯 Why Party Codenames?
 
 Standard board games are fun, but passing around a small key card or hunching over a table can be annoying properly. 
 
-**Crossfire Codenames** modernizes the experience for your living room:
+**Party Codenames** modernizes the experience for your living room:
 
 - **📺 The TV is the Board**: A beautiful, shared screen shows the word grid, score, and whose turn it is.
 - **📱 Phone as Controller**: Spymasters connect with their phones to see the "Key Card" privately. No more hiding behind a box lid!

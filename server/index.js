@@ -1,4 +1,6 @@
 import express from 'express';
+import os from 'os';
+import qrcode from 'qrcode-terminal';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
@@ -303,5 +305,36 @@ io.on('connection', (socket) => {
 
 const PORT = 3000;
 httpServer.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT}`);
+    // --- STARTUP HEADER ---
+    const version = "1.0.0";
+
+    // Find Network IP
+    const interfaces = os.networkInterfaces();
+    let networkIp = 'localhost';
+
+    // Iterate over interfaces to find the first non-internal IPv4
+    Object.keys(interfaces).forEach((ifaceName) => {
+        interfaces[ifaceName].forEach((iface) => {
+            if (iface.family === 'IPv4' && !iface.internal) {
+                networkIp = iface.address;
+            }
+        });
+    });
+
+    const networkUrl = `http://${networkIp}:${PORT}`;
+    const localUrl = `http://localhost:${PORT}`;
+
+    console.log('\n');
+    console.log('-----------------------------------------------------');
+    console.log(` 🕵️‍♂️  Party Codenames Server v${version}`);
+    console.log('-----------------------------------------------------');
+    console.log(` > Local:   ${localUrl}`);
+    console.log(` > Network: ${networkUrl}`);
+    console.log('-----------------------------------------------------');
+    console.log('\nScan this QR Code to join on Mobile:');
+
+    // Generate QR Code
+    qrcode.generate(networkUrl, { small: true });
+
+    console.log('-----------------------------------------------------\n');
 });
