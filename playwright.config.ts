@@ -18,8 +18,6 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  // WebServer block removed for manual execution stability
-  /* webServer block disabled for manual stability
   webServer: [
     {
       command: 'npm run dev',
@@ -38,5 +36,4 @@ export default defineConfig({
       timeout: 120 * 1000,
     }
   ],
-  */
 });
