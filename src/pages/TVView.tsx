@@ -5,6 +5,7 @@ import { GameStatus } from '@/components/game/GameStatus';
 import { GameOver } from '@/components/game/GameOver';
 import { QRCode } from '@/components/game/QRCode';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GameHistory } from '@/components/game/GameHistory';
 import { Monitor, Users } from 'lucide-react';
 
 export default function TVView() {
@@ -66,7 +67,7 @@ export default function TVView() {
             <p className="text-muted-foreground">
               Spymasters: Scan QR code or enter room code on your phone
             </p>
-            
+
             <div className="flex justify-center">
               <QRCode value={joinUrl} size={200} />
             </div>
@@ -108,24 +109,37 @@ export default function TVView() {
 
   // Playing state - show the board
   return (
-    <div className="min-h-screen bg-background p-4 flex flex-col">
-      {/* Header with status */}
-      <div className="mb-4">
-        <GameStatus room={room} isTV />
+    <div className="min-h-screen bg-neutral-900 text-white p-6 flex gap-6 overflow-hidden">
+      {/* Left Column: Board */}
+      <div className="flex-1 flex flex-col min-w-0">
+        <div className="mb-6">
+          <GameStatus room={room} isTV />
+        </div>
+
+        <div className="flex-1 flex items-center justify-center min-h-0">
+          <div className="w-full h-full max-w-[1400px]">
+            <GameBoard
+              cards={cards}
+              showSecretKey={false}
+              selectable={false}
+            />
+          </div>
+        </div>
       </div>
 
-      {/* Game Board - Public View */}
-      <div className="flex-1 flex items-center justify-center">
-        <GameBoard 
-          cards={cards} 
-          showSecretKey={false}
-          selectable={false}
-        />
-      </div>
+      {/* Right Column: Sidebar */}
+      <div className="w-80 flex-shrink-0 flex flex-col gap-6">
+        <div className="bg-card/10 text-card-foreground border-white/10 border rounded-lg p-4 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Room Code</div>
+            <div className="text-4xl font-mono font-bold tracking-[0.2em]">{room.room_code}</div>
+          </div>
+        </div>
 
-      {/* Room code footer */}
-      <div className="text-center text-muted-foreground py-2">
-        Room: {room.room_code}
+        {/* Game History Sidebar */}
+        <div className="flex-1 min-h-0">
+          <GameHistory logs={room?.logs || []} className="h-full border-2 border-primary/20 shadow-xl" />
+        </div>
       </div>
     </div>
   );

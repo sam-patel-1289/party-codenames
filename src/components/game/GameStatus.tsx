@@ -25,10 +25,12 @@ export function GameStatus({ room, isTV = false }: GameStatusProps) {
       {/* Turn Indicator */}
       <div className="text-center mb-4">
         {room.current_turn && (
-          <div className={cn(
-            "inline-flex items-center gap-2 px-4 py-2 rounded-full",
-            room.current_turn === 'red' ? 'bg-red-500/20' : 'bg-blue-500/20'
-          )}>
+          <div
+            data-testid="turn-badge"
+            className={cn(
+              "inline-flex items-center gap-2 px-4 py-2 rounded-full",
+              room.current_turn === 'red' ? 'bg-red-500/20' : 'bg-blue-500/20'
+            )}>
             <div className={cn(
               "w-3 h-3 rounded-full animate-pulse",
               teamBgColors[room.current_turn]

@@ -10,7 +10,7 @@ import { GameOver } from '@/components/game/GameOver';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Smartphone, Play, Hand, Eye, EyeOff } from 'lucide-react';
+import { Smartphone, Play, Hand, Eye, EyeOff, AlertTriangle, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { BoardCard } from '@/types/game';
 
@@ -30,13 +30,34 @@ export default function SpymasterView() {
     submitClue,
     selectWord,
     endTurnEarly,
-    resetGame
+    resetGame,
+    challengeClue,
+    resolveChallenge,
+    clearError
   } = useGameRoom(roomCode);
 
   const [selectedCard, setSelectedCard] = useState<BoardCard | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSecretKey, setShowSecretKey] = useState(true);
   const [hasJoined, setHasJoined] = useState(false);
+
+  // Determine player state
+  const isRedSpymaster = currentPlayer?.player_role === 'red_spymaster';
+  const isBlueSpymaster = currentPlayer?.player_role === 'blue_spymaster';
+  const isSpymaster = isRedSpymaster || isBlueSpymaster;
+  const myTeam = isRedSpymaster ? 'red' : isBlueSpymaster ? 'blue' : null;
+  const opposingTeam = myTeam === 'red' ? 'blue' : myTeam === 'blue' ? 'red' : null;
+
+  // Is it my turn to give clue?
+  const isMyTurnToClue = room?.game_state === 'playing' &&
+    room?.current_turn === myTeam &&
+    !room?.current_clue_word;
+
+  // Is it my turn to select (for opponent)?
+  const isMyTurnToSelect = room?.game_state === 'playing' &&
+    room?.current_turn === opposingTeam &&
+    !!room?.current_clue_word &&
+    (room?.guesses_remaining || 0) > 0;
 
   // Auto-join as player when room is loaded
   useEffect(() => {
@@ -49,6 +70,13 @@ export default function SpymasterView() {
     }
   }, [room, isLoading, hasJoined, currentPlayer, joinAsPlayer]);
 
+  // Auto-hide key when it's my turn to select (prevent accidental cheating)
+  useEffect(() => {
+    if (isMyTurnToSelect) {
+      setShowSecretKey(false);
+    }
+  }, [isMyTurnToSelect]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -59,7 +87,7 @@ export default function SpymasterView() {
     );
   }
 
-  if (error || !room) {
+  if ((!room && !isLoading) || (!room && error)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="max-w-sm w-full">
@@ -68,7 +96,7 @@ export default function SpymasterView() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              The room "{roomCode}" doesn't exist.
+              The room "{roomCode}" doesn't exist or could not be loaded.
             </p>
             <Button onClick={() => navigate('/')} className="w-full">
               Go Home
@@ -79,23 +107,14 @@ export default function SpymasterView() {
     );
   }
 
-  // Determine player state
-  const isRedSpymaster = currentPlayer?.player_role === 'red_spymaster';
-  const isBlueSpymaster = currentPlayer?.player_role === 'blue_spymaster';
-  const isSpymaster = isRedSpymaster || isBlueSpymaster;
-  const myTeam = isRedSpymaster ? 'red' : isBlueSpymaster ? 'blue' : null;
-  const opposingTeam = myTeam === 'red' ? 'blue' : myTeam === 'blue' ? 'red' : null;
+  // Ensure room exists for safety, though the check above handles it
+  if (!room) return null;
 
-  // Is it my turn to give clue?
-  const isMyTurnToClue = room.game_state === 'playing' && 
-    room.current_turn === myTeam && 
-    !room.current_clue_word;
 
-  // Is it my turn to select (for opponent)?
-  const isMyTurnToSelect = room.game_state === 'playing' && 
-    room.current_turn === opposingTeam && 
-    !!room.current_clue_word &&
-    room.guesses_remaining > 0;
+
+  // Is clue challenged?
+  const isChallenged = room.clue_status === 'challenged';
+  const isRejected = room.clue_status === 'rejected';
 
   // Game Over
   if (room.game_state === 'game_over') {
@@ -134,8 +153,8 @@ export default function SpymasterView() {
         {isSpymaster && bothReady && (
           <Card className="border-primary">
             <CardContent className="pt-6">
-              <Button 
-                onClick={startGame} 
+              <Button
+                onClick={startGame}
                 className="w-full h-14 text-lg gap-2"
               >
                 <Play className="w-5 h-5" />
@@ -197,12 +216,30 @@ export default function SpymasterView() {
         </Button>
       </div>
 
+      {/* Transient Error Display */}
+      {error && (
+        <div className="bg-destructive/15 text-destructive border border-destructive/20 p-3 rounded-md flex items-center justify-between text-sm">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4" />
+            <span>{error}</span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-auto p-1 text-destructive hover:bg-destructive/10"
+            onClick={clearError}
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
+
       {/* Status */}
       <GameStatus room={room} />
 
       {/* Role-based UI */}
       {isMyTurnToClue && (
-        <ClueInput 
+        <ClueInput
           team={myTeam!}
           onSubmit={submitClue}
         />
@@ -235,8 +272,8 @@ export default function SpymasterView() {
               </span> spymaster will tap their selections.
             </p>
             {room.guesses_used >= 1 && (
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={endTurnEarly}
                 className="gap-2"
               >
@@ -248,13 +285,69 @@ export default function SpymasterView() {
       )}
 
       {room.current_turn === opposingTeam && !room.current_clue_word && (
-        <Card>
-          <CardContent className="pt-6 text-center text-muted-foreground">
-            Waiting for <span className={opposingColor}>
-              {opposingTeam?.toUpperCase()}
-            </span> spymaster to give a clue...
+        <Card className={cn(isChallenged && "border-yellow-500 animate-pulse")}>
+          <CardContent className="pt-6 text-center text-muted-foreground flex flex-col gap-4">
+            <p>
+              Waiting for <span className={opposingColor}>
+                {opposingTeam?.toUpperCase()}
+              </span> spymaster to give a clue...
+            </p>
+            {/* Allow challenge if they just gave a clue (but client logic hides this block if clue exists... wait) 
+                Actually, this block shows when NO clue exists. Challenge button should appear AFTER clue is given but BEFORE guesses start?
+                Or rather, validation happens immediately. 
+                Wait, if clue is 'allowed' by default, opposing team can challenge it.
+            */}
           </CardContent>
         </Card>
+      )}
+
+      {/* Challenge Logic Display */}
+      {room.current_clue_word && (
+        <div className="flex gap-2 justify-center pb-2">
+          {/* Show Challenge UI if I am the opposing spymaster (the one selecting) and status is allowed */}
+          {isMyTurnToSelect && room.clue_status === 'allowed' && (
+            <Button
+              variant="destructive"
+              size="sm"
+              className="gap-2 w-full max-w-xs"
+              onClick={() => challengeClue()}
+            >
+              <AlertTriangle className="w-4 h-4" />
+              Challenge Clue "{room.current_clue_word}"
+            </Button>
+          )}
+
+          {/* Show Resolution UI if status is challenged */}
+          {isChallenged && (
+            <Card className="w-full border-yellow-500 bg-yellow-500/10">
+              <CardHeader className="py-3">
+                <CardTitle className="text-sm text-yellow-600 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4" />
+                  Clue Challenged!
+                </CardTitle>
+                <CardDescription>
+                  Is "{room.current_clue_word}" a valid clue?
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex gap-4 pt-0">
+                <Button
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                  onClick={() => resolveChallenge('allowed')}
+                >
+                  <Check className="w-4 h-4 mr-2" />
+                  Valid
+                </Button>
+                <Button
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                  onClick={() => resolveChallenge('rejected')}
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Invalid
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       )}
 
       {/* Game Board */}

@@ -3,6 +3,8 @@ export type CardType = 'red' | 'blue' | 'bystander' | 'assassin';
 export type GameState = 'lobby' | 'team_setup' | 'playing' | 'game_over';
 export type PlayerRole = 'red_spymaster' | 'blue_spymaster' | 'spectator';
 
+export type ClueStatus = 'pending' | 'challenged' | 'rejected' | 'allowed';
+
 export interface GameRoom {
   id: string;
   room_code: string;
@@ -11,6 +13,9 @@ export interface GameRoom {
   starting_team: TeamColor | null;
   current_clue_word: string | null;
   current_clue_number: number | null;
+  clue_status: ClueStatus;
+  strict_clue_rules: boolean;
+  clue_penalty_enabled: boolean;
   guesses_remaining: number;
   guesses_used: number;
   red_score: number;
@@ -20,6 +25,7 @@ export interface GameRoom {
   winner: TeamColor | null;
   created_at: string;
   updated_at: string;
+  logs?: GameLog[];
 }
 
 export interface BoardCard {
