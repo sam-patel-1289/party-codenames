@@ -1,4 +1,3 @@
-
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
@@ -307,6 +306,6 @@ io.on('connection', (socket) => {
 });
 
 const PORT = 3000;
-httpServer.listen(PORT, () => {
+httpServer.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
 });
