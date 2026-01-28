@@ -395,7 +395,7 @@ test.describe('Spymaster - Selection View', () => {
         await passiveSpymaster.page.waitForTimeout(1000);
 
         // Should show 3 remaining (N+1 = 2+1)
-        await expect(passiveSpymaster.page.locator('text=/0.*\/.*3|3.*remaining|3.*left/i').first()).toBeVisible();
+        await expect(passiveSpymaster.page.locator('text=/0.*/.*3|3.*remaining|3.*left/i').first()).toBeVisible();
     });
 });
 

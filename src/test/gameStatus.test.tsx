@@ -92,8 +92,9 @@ describe('GameStatus', () => {
             render(<GameStatus room={room} isTV />);
 
             // Should show remaining: 8-2=6 for red, 9-3=6 for blue
-            expect(screen.getByText('6')).toBeInTheDocument(); // Red remaining
-            expect(screen.getAllByText('6')).toHaveLength(2); // Both teams have 6 remaining
+            // Since both are 6, we expect to find 2 elements
+            const scores = screen.getAllByText('6');
+            expect(scores).toHaveLength(2);
         });
 
         it('shows correct remaining count when teams have different progress', () => {

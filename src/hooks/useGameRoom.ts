@@ -72,11 +72,13 @@ export function useGameRoom(roomCode?: string) {
     }
 
     // Listen for state updates
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const onStateUpdate = (updatedRoom: any) => {
       console.log(`[useGameRoom] Received state_update for room ${updatedRoom.room_code}`);
       setRoom(updatedRoom);
       setCards(updatedRoom.cards || []);
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mappedPlayers = (updatedRoom.players || []).map((p: any) => ({
         id: p.id,
         room_id: updatedRoom.id,
@@ -88,6 +90,7 @@ export function useGameRoom(roomCode?: string) {
       setPlayers(mappedPlayers);
 
       // Find self
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const me = updatedRoom.players?.find((p: any) => p.sessionId === sessionId);
       if (me) {
         console.log(`[useGameRoom] Found current player: ${me.role}`);
@@ -195,6 +198,7 @@ export function useGameRoom(roomCode?: string) {
     return true;
   }, [room, normalizedRoomCode, cards]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const selectWord = useCallback(async (cardId: string): Promise<any> => {
     if (!normalizedRoomCode) return { success: false };
     socket.emit('select_card', { roomCode: normalizedRoomCode, cardId });

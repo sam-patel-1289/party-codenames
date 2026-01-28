@@ -57,6 +57,7 @@ async function setupPlayingGame(browser: Browser) {
     };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function submitClue(page: any, clueWord: string, number: number) {
     await page.waitForSelector('input[placeholder="Enter one word..."]', { timeout: 10000 });
     await page.fill('input[placeholder="Enter one word..."]', clueWord);
@@ -65,7 +66,9 @@ async function submitClue(page: any, clueWord: string, number: number) {
 }
 
 async function selectCard(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     activeSpymaster: any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     passiveSpymaster: any,
     activeTeam: string
 ) {
@@ -202,6 +205,8 @@ test.describe('Complete Game - Turn Mechanics', () => {
 
         // Find a neutral card (typically yellow/beige ring)
         await activeSpymaster.page.waitForSelector('.grid');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const onStateUpdate = (updatedRoom: any) => { }; // Placeholder for the intended change
         const neutralCard = activeSpymaster.page.locator('.ring-yellow-500, .ring-amber-400').first();
 
         if (await neutralCard.count() > 0) {

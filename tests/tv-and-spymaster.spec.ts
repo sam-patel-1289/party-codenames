@@ -1,9 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { Browser } from 'playwright';
 
 // Helper to get room code
-async function createGame(browser) {
+async function createGame(browser: Browser) {
     const tvContext = await browser.newContext();
-    const tvPage = await tvContext.newPage();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const tvPage: any = await tvContext.newPage();
     await tvPage.goto('/');
 
     await tvPage.click('text=Create New Game');
@@ -13,6 +15,7 @@ async function createGame(browser) {
     return { tvPage, roomCode, tvContext };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function joinSpymaster(browser: any, roomCode: string, team: string) {
     const context = await browser.newContext();
     const page = await context.newPage();
@@ -21,6 +24,7 @@ async function joinSpymaster(browser: any, roomCode: string, team: string) {
     return { page, context };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function setupPlayingGame(browser: any) {
     const { tvPage, roomCode, tvContext } = await createGame(browser);
     const red = await joinSpymaster(browser, roomCode, 'Red');

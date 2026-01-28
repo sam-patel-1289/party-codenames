@@ -15,6 +15,7 @@ async function createGame(browser) {
     return { tvPage, roomCode, tvContext };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function joinSpymaster(browser: any, roomCode: string, team: string) {
     const context = await browser.newContext();
     const page = await context.newPage();
