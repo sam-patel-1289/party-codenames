@@ -309,17 +309,20 @@ httpServer.listen(PORT, '0.0.0.0', () => {
     const version = "1.0.0";
 
     // Find Network IP
-    const interfaces = os.networkInterfaces();
-    let networkIp = 'localhost';
+    // Priority: HOST_IP env var (passed from Docker) > First non-internal IPv4
+    let networkIp = process.env.HOST_IP || 'localhost';
 
-    // Iterate over interfaces to find the first non-internal IPv4
-    Object.keys(interfaces).forEach((ifaceName) => {
-        interfaces[ifaceName].forEach((iface) => {
-            if (iface.family === 'IPv4' && !iface.internal) {
-                networkIp = iface.address;
-            }
+    if (!process.env.HOST_IP) {
+        const interfaces = os.networkInterfaces();
+        // Iterate over interfaces to find the first non-internal IPv4
+        Object.keys(interfaces).forEach((ifaceName) => {
+            interfaces[ifaceName].forEach((iface) => {
+                if (iface.family === 'IPv4' && !iface.internal) {
+                    networkIp = iface.address;
+                }
+            });
         });
-    });
+    }
 
     const networkUrl = `http://${networkIp}:${PORT}`;
     const localUrl = `http://localhost:${PORT}`;

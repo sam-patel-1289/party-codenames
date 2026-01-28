@@ -6,3 +6,4 @@ services:
     restart: unless-stopped
     environment:
       - NODE_ENV=production
+      - HOST_IP=${HOST_IP}
